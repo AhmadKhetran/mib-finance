@@ -1,0 +1,64 @@
+import { IsArray, IsNotEmpty,  IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+export class FiltersDto {
+  @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;
+
+  @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  endDate: string;
+
+
+  @ApiProperty({
+      type: [String],
+      example: ['**********', '**********'],
+      required: true,
+    })
+    @IsArray()
+    @IsNotEmpty()
+    @IsString({ each: true })
+    branches: string[];
+
+    @ApiProperty({
+      type: [String],
+      example: ['**********', '**********'],
+      required: true,
+    })
+    @IsArray()
+    @IsNotEmpty()
+    @IsString({ each: true })
+    departments: string[];
+  }
+
+
+  export class BalanceSheetFiltersDto {
+  @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;
+
+  @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  endDate: string;
+}
