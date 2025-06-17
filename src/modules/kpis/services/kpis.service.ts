@@ -322,9 +322,10 @@ ORDER BY
 
   async balanceSheetKpi(payload: any) {
     try {
+      const {startDate, endDate} = payload
       const res = await this.mssqlService.query(`
-        DECLARE @StartMonth VARCHAR(6) = '202401'; -- Start month (e.g., February 2024)
-        DECLARE @EndMonth VARCHAR(6) = '202401';   -- End month (e.g., February 2025)
+        DECLARE @StartMonth VARCHAR(6) = @0; -- Start month (e.g., February 2024)
+        DECLARE @EndMonth VARCHAR(6) = @1;   -- End month (e.g., February 2025)
 
 SELECT
     -- Total Assets
@@ -419,13 +420,18 @@ SELECT
      WHERE gab.UniqAgency = 65537
      AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
      AND ga.TypeCode = 'L'
-     AND gag.GroupCode = 35) AS non_current_liabilities,
-        `);
+     AND gag.GroupCode = 35) AS non_current_liabilities
+        `,[startDate, endDate]);
 
-      return res.map((e) => ({
-        ...e,
-        total_current_lability: e.total_liabilities - e.non_current_liabilities,
-      }));
+       return res.map((e) => ({
+      ...e,
+      total_current_lability: e.total_liabilities - e.non_current_liabilities,
+      shareholder_equity:
+        Math.abs(e.total_assets) - Math.abs(e.total_liabilities),
+      current_ratio:
+        e.total_current_asset /
+        (e.total_liabilities - e.non_current_liabilities),
+    }))
     } catch (error) {}
   }
 }
