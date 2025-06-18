@@ -320,110 +320,110 @@ ORDER BY
     return groupedResult;
   }
 
-  async balanceSheetKpi(payload: any) {
-    try {
-      const {startDate, endDate} = payload
-      const res = await this.mssqlService.query(`
-        DECLARE @StartMonth VARCHAR(6) = @0; -- Start month (e.g., February 2024)
-        DECLARE @EndMonth VARCHAR(6) = @1;   -- End month (e.g., February 2025)
+ async balanceSheetKpi(payload: any) {
+  try {
+    const { startDate, endDate } = payload;
+    const res = await this.mssqlService.query(`
+      DECLARE @StartMonth VARCHAR(6) = COALESCE(@0, (SELECT MIN(FiscalAccountingMonth) FROM GlAccountBalance WHERE UniqAgency = 65537));
+      DECLARE @EndMonth VARCHAR(6) = COALESCE(@1, (SELECT MAX(FiscalAccountingMonth) FROM GlAccountBalance WHERE UniqAgency = 65537));
 
-SELECT
-    -- Total Assets
-    (SELECT SUM(gab.Amount) AS TotalAmount
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.TypeCode = 'A') AS total_assets,
+      SELECT
+          -- Total Assets
+          (SELECT SUM(gab.Amount) AS TotalAmount
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.TypeCode = 'A') AS total_assets,
 
-    -- Current Assets Details
-    (SELECT SUM(gab.Amount) AS CashShortTermDeposits
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account IN ('2200', '2651', '2800')) AS cash_short_term_deposits,
+          -- Current Assets Details
+          (SELECT SUM(gab.Amount) AS CashShortTermDeposits
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account IN ('2200', '2651', '2800')) AS cash_short_term_deposits,
 
-    (SELECT SUM(gab.Amount) AS Receivables
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account IN ('2650', '2900')) AS receivables,
+          (SELECT SUM(gab.Amount) AS Receivables
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account IN ('2650', '2900')) AS receivables,
 
-    (SELECT SUM(gab.Amount) AS InterCo
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account = '2800') AS interco,
+          (SELECT SUM(gab.Amount) AS InterCo
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account = '2800') AS interco,
 
-    (SELECT SUM(gab.Amount) AS NetCurrentAsset
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.TypeCode = 'A'
-     AND gag.GroupCode = 20) AS total_current_asset,
+          (SELECT SUM(gab.Amount) AS NetCurrentAsset
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.TypeCode = 'A'
+           AND gag.GroupCode = 20) AS total_current_asset,
 
-    (SELECT SUM(gab.Amount) AS FreeCashFlow
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account = '2950') AS free_cash_flow,
+          (SELECT SUM(gab.Amount) AS FreeCashFlow
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account = '2950') AS free_cash_flow,
 
-    (SELECT SUM(gab.Amount) AS NonCurrentAssets
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.TypeCode = 'A'
-     AND gag.GroupCode = 10) AS non_current_assets,
+          (SELECT SUM(gab.Amount) AS NonCurrentAssets
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.TypeCode = 'A'
+           AND gag.GroupCode = 10) AS non_current_assets,
 
-    -- Total Liabilities
-    (SELECT SUM(gab.Amount) AS TotalAmount
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.TypeCode = 'L') AS total_liabilities,
+          -- Total Liabilities
+          (SELECT SUM(gab.Amount) AS TotalAmount
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.TypeCode = 'L') AS total_liabilities,
 
-    -- Current Liabilities Details
-    (SELECT SUM(gab.Amount) AS OtherAccruals
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account = '3000') AS other_accruals,
+          -- Current Liabilities Details
+          (SELECT SUM(gab.Amount) AS OtherAccruals
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account = '3000') AS other_accruals,
 
-    (SELECT SUM(gab.Amount) AS Payables
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account = '3020') AS payables,
+          (SELECT SUM(gab.Amount) AS Payables
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account = '3020') AS payables,
 
-    (SELECT SUM(gab.Amount) AS InterCo
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.Account = '3010') AS interco_liability,
+          (SELECT SUM(gab.Amount) AS InterCo
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.Account = '3010') AS interco_liability,
 
-    (SELECT SUM(gab.Amount) AS NonCurrentLiabilities
-     FROM GlAccount ga
-     JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
-     JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
-     WHERE gab.UniqAgency = 65537
-     AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
-     AND ga.TypeCode = 'L'
-     AND gag.GroupCode = 35) AS non_current_liabilities
-        `,[startDate, endDate]);
+          (SELECT SUM(gab.Amount) AS NonCurrentLiabilities
+           FROM GlAccount ga
+           JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+           JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
+           WHERE gab.UniqAgency = 65537
+           AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
+           AND ga.TypeCode = 'L'
+           AND gag.GroupCode = 35) AS non_current_liabilities
+      `, [startDate, endDate]);
 
-       return res.map((e) => ({
+        return res.map((e) => ({
       ...e,
       total_current_lability: e.total_liabilities - e.non_current_liabilities,
       shareholder_equity:
@@ -432,6 +432,9 @@ SELECT
         e.total_current_asset /
         (e.total_liabilities - e.non_current_liabilities),
     }))
-    } catch (error) {}
+  } catch (error) {
+    console.error('Error in balanceSheetKpi:', error.message);
+    return null;
   }
+}
 }
