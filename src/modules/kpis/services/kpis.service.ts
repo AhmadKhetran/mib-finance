@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { MssqlService } from "../db/db.service";
+import { AccountDescriptionMap } from "../dto/accountDescriptionOptionMap";
 
 @Injectable()
 export class KpiService {
@@ -320,10 +321,11 @@ ORDER BY
     return groupedResult;
   }
 
- async balanceSheetKpi(payload: any) {
-  try {
-    const { startDate, endDate } = payload;
-    const res = await this.mssqlService.query(`
+  async balanceSheetKpi(payload: any) {
+    try {
+      const { startDate, endDate } = payload;
+      const res = await this.mssqlService.query(
+        `
       DECLARE @StartMonth VARCHAR(6) = COALESCE(@0, (SELECT MIN(FiscalAccountingMonth) FROM GlAccountBalance WHERE UniqAgency = 65537));
       DECLARE @EndMonth VARCHAR(6) = COALESCE(@1, (SELECT MAX(FiscalAccountingMonth) FROM GlAccountBalance WHERE UniqAgency = 65537));
 
@@ -421,20 +423,100 @@ ORDER BY
            AND (gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth OR (@StartMonth IS NULL AND @EndMonth IS NULL))
            AND ga.TypeCode = 'L'
            AND gag.GroupCode = 35) AS non_current_liabilities
-      `, [startDate, endDate]);
+      `,
+        [startDate, endDate]
+      );
 
-        return res.map((e) => ({
-      ...e,
-      total_current_lability: e.total_liabilities - e.non_current_liabilities,
-      shareholder_equity:
-        Math.abs(e.total_assets) - Math.abs(e.total_liabilities),
-      current_ratio:
-        e.total_current_asset /
-        (e.total_liabilities - e.non_current_liabilities),
-    }))
-  } catch (error) {
-    console.error('Error in balanceSheetKpi:', error.message);
-    return null;
+      return res.map((e) => ({
+        ...e,
+        total_current_lability: e.total_liabilities - e.non_current_liabilities,
+        shareholder_equity:
+          Math.abs(e.total_assets) - Math.abs(e.total_liabilities),
+        current_ratio:
+          e.total_current_asset /
+          (e.total_liabilities - e.non_current_liabilities),
+      }));
+    } catch (error) {
+      console.error("Error in balanceSheetKpi:", error.message);
+      return null;
+    }
   }
-}
+
+  async getIncomeStatementOfBranch(dto: any) {
+    try {
+      const { startDate, endDate, uniqBranchId } = dto;
+
+      const res = await this.mssqlService.query(
+        `
+    DECLARE @StartMonth VARCHAR(6) = @0; -- Start month
+DECLARE @EndMonth VARCHAR(6) = @1;   -- End month
+DECLARE @UniqBranch INT = @2;           -- Branch ID (Kingston)
+
+SELECT
+    ga.Account AS [AccountCode],
+    MIN(ISNULL(clr.ResourceText, ga.Account)) AS [AccountDescription], -- Taking first description
+    gag.GroupCode AS [GroupCode],
+    MIN(ISNULL(clr2.ResourceText, gag.GroupCode)) AS [GroupDescription], -- Taking first group description
+    CASE ga.TypeCode
+        WHEN 'I' THEN 'Income'
+        WHEN 'X' THEN 'Expense'
+        ELSE 'Other'
+    END AS [AccountType],
+    SUM(CASE WHEN gab.UniqDepartment = 65539 THEN gab.Amount ELSE 0 END) AS [IndividualLines],
+    SUM(CASE WHEN gab.UniqDepartment = 65541 THEN gab.Amount ELSE 0 END) AS [EmpBenefitCorp],
+    SUM(CASE WHEN gab.UniqDepartment = 65538 THEN gab.Amount ELSE 0 END) AS [GeneralCorporate],
+    SUM(CASE WHEN gab.UniqDepartment = 65537 THEN gab.Amount ELSE 0 END) AS [GeneralGovOfJamaica],
+    SUM(CASE WHEN gab.UniqDepartment = 65543 THEN gab.Amount ELSE 0 END) AS [LifeDepartment]
+FROM GlAccount ga
+JOIN GlAccountBalance gab ON ga.UniqGlAccount = gab.UniqGlAccount
+LEFT JOIN GlAccountGroup gag ON ga.UniqGlAccountGroup = gag.UniqGlAccountGroup
+LEFT JOIN ConfigureLkLanguageResource clr ON clr.ConfigureLkLanguageResourceID = ga.ConfigureLkLanguageResourceID AND clr.CultureCode = 'en-US'
+LEFT JOIN ConfigureLkLanguageResource clr2 ON clr2.ConfigureLkLanguageResourceID = gag.ConfigureLkLanguageResourceID AND clr2.CultureCode = 'en-US'
+WHERE gab.UniqAgency = 65537
+    AND gab.UniqBranch = @UniqBranch
+    AND gab.FiscalAccountingMonth BETWEEN @StartMonth AND @EndMonth
+    AND ga.TypeCode IN ('I', 'X') -- Focus on Income and Expense accounts
+GROUP BY
+    ga.Account,
+    ga.TypeCode,
+    gag.GroupCode
+HAVING SUM(gab.Amount) <> 0
+ORDER BY
+    CASE ga.TypeCode WHEN 'I' THEN 1 ELSE 2 END, -- Income first, then Expenses
+    gag.GroupCode,
+    ga.Account;
+    `,
+        [startDate, endDate, uniqBranchId]
+      );
+
+      const fixedAccountDescription = res.map((e) => {
+        const normalizedAccountCode = e.AccountCode.replace(/\s+/g, "");
+        const correctDescription =
+          AccountDescriptionMap[normalizedAccountCode] || e.AccountDescription;
+        return {
+          ...e,
+          AccountDescription: correctDescription,
+        };
+      });
+
+      const totalAddition = fixedAccountDescription.map((e) => {
+        const total =
+          e.IndividualLines +
+          e.EmpBenefitCorp +
+          e.GeneralCorporate +
+          e.GeneralGovOfJamaica +
+          e.LifeDepartment;
+        return {
+          ...e,
+          total,
+        };
+      });
+      return totalAddition;
+    } catch (error) {
+      return {
+        error: error.message,
+        statusCode: 400,
+      };
+    }
+  }
 }

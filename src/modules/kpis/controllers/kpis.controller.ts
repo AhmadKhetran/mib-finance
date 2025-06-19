@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { KpiService } from '../services/kpis.service';
 import { ApiTags, ApiBearerAuth} from '@nestjs/swagger';
-import { BalanceSheetFiltersDto, FiltersDto } from '../dto/filters.dto';
+import { BalanceSheetFiltersDto, FiltersDto, IncomeStatementDto } from '../dto/filters.dto';
 
 @ApiTags('kpis')
 @Controller('kpi')
@@ -30,5 +30,13 @@ export class KpiController {
       @Body() dto: BalanceSheetFiltersDto
     ) {
       return this.kpiService.balanceSheetKpi(dto);
+    }
+
+    @ApiBearerAuth()
+    @Post('income-statement')
+    findIncomeStatementOfBranch(
+      @Body() dto: IncomeStatementDto
+    ) {
+      return this.kpiService.getIncomeStatementOfBranch(dto);
     }
 }

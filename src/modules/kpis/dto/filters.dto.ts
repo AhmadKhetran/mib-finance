@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty,  IsString } from "class-validator";
+import { IsArray, IsNotEmpty,  IsNumber,  IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class FiltersDto {
@@ -61,4 +61,33 @@ export class FiltersDto {
   @IsString()
   @IsNotEmpty()
   endDate: string;
+}
+
+export class IncomeStatementDto {
+   @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;
+
+  @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  endDate: string;
+
+   @ApiProperty({
+    type: Number,
+    example: 65537,
+    required: true,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  uniqBranchId: number;
 }
