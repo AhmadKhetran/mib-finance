@@ -499,6 +499,7 @@ ORDER BY
         };
       });
 
+
       const totalAddition = fixedAccountDescription.map((e) => {
         const total =
           e.IndividualLines +
@@ -511,6 +512,193 @@ ORDER BY
           total,
         };
       });
+
+
+      //// Total expense calculation
+      const totalExpenseObjects =  totalAddition.filter(e => e.AccountType === 'Expense')
+
+      const totalExpense = {
+      "AccountCode": "0000",
+      "AccountDescription": "Total Expense",
+      "GroupCode": 0,
+      "GroupDescription": "Total Expense Department wise",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+      totalExpenseObjects.map(e => {
+        totalExpense.IndividualLines += e.IndividualLines,
+        totalExpense.EmpBenefitCorp += e.EmpBenefitCorp,
+        totalExpense.GeneralCorporate += e.GeneralCorporate,
+        totalExpense.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        totalExpense.LifeDepartment += e.LifeDepartment
+        totalExpense.total += e.total
+      })
+
+
+      // total income calculation ////
+      const totalIncomeObjects =  totalAddition.filter(e => e.AccountType === 'Income')
+
+      const totalIncome = {
+      "AccountCode": "0000",
+      "AccountDescription": "Total Income",
+      "GroupCode": 0,
+      "GroupDescription": "Total Income Department wise",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+
+      totalIncomeObjects.map(e => {
+        totalIncome.IndividualLines += e.IndividualLines,
+        totalIncome.EmpBenefitCorp += e.EmpBenefitCorp,
+        totalIncome.GeneralCorporate += e.GeneralCorporate,
+        totalIncome.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        totalIncome.LifeDepartment += e.LifeDepartment
+        totalIncome.total += e.total
+      })
+
+
+      //// Net profit loss calculation
+
+      const NetProfitLoss = {
+      "AccountCode": "0000",
+      "AccountDescription": "Net Profit/Loss",
+      "GroupCode": 0,
+      "GroupDescription": "Net Profit/Loss",
+      "AccountType": "Income",
+      "IndividualLines": Math.abs(totalIncome.IndividualLines) - totalExpense.IndividualLines,
+      "EmpBenefitCorp": Math.abs(totalIncome.EmpBenefitCorp) - totalExpense.EmpBenefitCorp,
+      "GeneralCorporate":Math.abs(totalIncome.GeneralCorporate) - totalExpense.GeneralCorporate,
+      "GeneralGovOfJamaica": Math.abs(totalIncome.GeneralGovOfJamaica) - totalExpense.GeneralGovOfJamaica,
+      "LifeDepartment": Math.abs(totalIncome.LifeDepartment) - totalExpense.LifeDepartment,
+      "total": Math.abs(totalIncome.total) - totalExpense.total
+      }
+
+      ///// Financial Expense Calculation
+
+      const financialExpenseObjects = totalAddition.filter(e => e.GroupDescription === "Financial Expense")
+      const financialExpenses = {
+      "AccountCode": "0000",
+      "AccountDescription": "Subtotal Financial Expense",
+      "GroupCode": 0,
+      "GroupDescription": "Subtotal Financial Expense",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+     financialExpenseObjects.map(e => {
+        financialExpenses.IndividualLines += e.IndividualLines,
+        financialExpenses.EmpBenefitCorp += e.EmpBenefitCorp,
+        financialExpenses.GeneralCorporate += e.GeneralCorporate,
+        financialExpenses.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        financialExpenses.LifeDepartment += e.LifeDepartment
+        financialExpenses.total += e.total
+      })
+
+      /// Administrative Expense
+
+      const administrativeExpenseObjects = totalAddition.filter(e => e.GroupDescription === "Administrative Expense")
+      const administrativeExpenses = {
+      "AccountCode": "0000",
+      "AccountDescription": "Subtotal Administrative Expense",
+      "GroupCode": 0,
+      "GroupDescription": "Subtotal Administrative Expense",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+     administrativeExpenseObjects.map(e => {
+        administrativeExpenses.IndividualLines += e.IndividualLines,
+        administrativeExpenses.EmpBenefitCorp += e.EmpBenefitCorp,
+        administrativeExpenses.GeneralCorporate += e.GeneralCorporate,
+        administrativeExpenses.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        administrativeExpenses.LifeDepartment += e.LifeDepartment
+        administrativeExpenses.total += e.total
+      })
+
+
+      ///  Commision and fee income
+
+      const commisionAndFeeIncomeObjects = totalAddition.filter(e => e.GroupDescription === "Commision & Fee Income")
+      const commisionAndFeeIncome = {
+      "AccountCode": "0000",
+      "AccountDescription": "Subtotal Commision & Fee Income",
+      "GroupCode": 0,
+      "GroupDescription": "Subtotal Commision & Fee Income",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+     commisionAndFeeIncomeObjects.map(e => {
+        commisionAndFeeIncome.IndividualLines += e.IndividualLines,
+        commisionAndFeeIncome.EmpBenefitCorp += e.EmpBenefitCorp,
+        commisionAndFeeIncome.GeneralCorporate += e.GeneralCorporate,
+        commisionAndFeeIncome.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        commisionAndFeeIncome.LifeDepartment += e.LifeDepartment
+        commisionAndFeeIncome.total += e.total
+      })
+
+      // subtotal investment and other income
+      const investmentAndOtherIncomeObjects = totalAddition.filter(e => e.GroupDescription === "Investments & Other Income")
+      const investmentAndOtherIncome = {
+      "AccountCode": "0000",
+      "AccountDescription": "Subtotal Investment & Other Income",
+      "GroupCode": 0,
+      "GroupDescription": "Subtotal Investment & Other Income",
+      "AccountType": "Income",
+      "IndividualLines": 0,
+      "EmpBenefitCorp": 0,
+      "GeneralCorporate":0,
+      "GeneralGovOfJamaica": 0,
+      "LifeDepartment": 0,
+      "total": 0
+      }
+
+     investmentAndOtherIncomeObjects.map(e => {
+        investmentAndOtherIncome.IndividualLines += e.IndividualLines,
+        investmentAndOtherIncome.EmpBenefitCorp += e.EmpBenefitCorp,
+        investmentAndOtherIncome.GeneralCorporate += e.GeneralCorporate,
+        investmentAndOtherIncome.GeneralGovOfJamaica += e.GeneralGovOfJamaica,
+        investmentAndOtherIncome.LifeDepartment += e.LifeDepartment
+        investmentAndOtherIncome.total += e.total
+      })
+
+      /// pushing in values
+      totalAddition.push(totalExpense)
+      totalAddition.push(totalIncome)
+      totalAddition.push(NetProfitLoss)
+      totalAddition.push(administrativeExpenses)
+      totalAddition.push(financialExpenses)
+      totalAddition.push(commisionAndFeeIncome)
+      totalAddition.push(investmentAndOtherIncome)
+
+
       return totalAddition;
     } catch (error) {
       return {
