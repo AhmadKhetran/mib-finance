@@ -91,3 +91,15 @@ export class IncomeStatementDto {
   @IsNotEmpty()
   uniqBranchId: number;
 }
+
+export class CashFlowStatementDto {
+   @ApiProperty({
+    type: String,
+    example: '202401',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  reportingMonth: string;
+
+}
